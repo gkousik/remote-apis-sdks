@@ -259,13 +259,13 @@ func (ec *Context) ExecuteRemotely() {
 	cmdID := ec.cmd.Identifiers.CommandID
 	log.V(1).Infof("%s> Checking inputs to upload...", cmdID)
 	// TODO(olaola): compute input cache hit stats.
-	ec.Metadata.EventTimes[command.EventUploadInputs] = &command.TimeInterval{From: time.Now()}
-	err := ec.client.GrpcClient.UploadIfMissing(ec.ctx, ec.inputBlobs...)
-	ec.Metadata.EventTimes[command.EventUploadInputs].To = time.Now()
-	if err != nil {
-		ec.Result = command.NewRemoteErrorResult(err)
-		return
-	}
+	// ec.Metadata.EventTimes[command.EventUploadInputs] = &command.TimeInterval{From: time.Now()}
+	// err := ec.client.GrpcClient.UploadIfMissing(ec.ctx, ec.inputBlobs...)
+	// ec.Metadata.EventTimes[command.EventUploadInputs].To = time.Now()
+	// if err != nil {
+	// 	ec.Result = command.NewRemoteErrorResult(err)
+	// 	return
+	// }
 	log.V(1).Infof("%s> Executing remotely...\n%s", cmdID, strings.Join(ec.cmd.Args, " "))
 	ec.Metadata.EventTimes[command.EventExecuteRemotely] = &command.TimeInterval{From: time.Now()}
 	op, err := ec.client.GrpcClient.ExecuteAndWait(ec.ctx, &repb.ExecuteRequest{
