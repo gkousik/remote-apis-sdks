@@ -24,6 +24,11 @@ import (
 	log "github.com/golang/glog"
 )
 
+var (
+	uploadedDigests = map[string]bool{}
+	mu sync.Mutex
+)
+
 // UploadIfMissing stores a number of uploadable items.
 // It first queries the CAS to see which items are missing and only uploads those that are.
 func (c *Client) UploadIfMissing(ctx context.Context, data ...*chunker.Chunker) error {
@@ -100,6 +105,13 @@ func (c *Client) UploadIfMissing(ctx context.Context, data ...*chunker.Chunker) 
 	log.V(2).Info("Waiting for remaining jobs")
 	err = eg.Wait()
 	log.V(2).Info("Done")
+	if err == nil {
+		for _, d := range dgs {
+			mu.Lock()
+			uploadedDigests[d.Hash] = true
+			mu.Unlock()
+		}
+	}
 	return err
 }
 
@@ -401,6 +413,16 @@ func (c *Client) MissingBlobs(ctx context.Context, ds []digest.Digest) ([]digest
 	if cap(c.casUploaders) <= 0 {
 		return nil, fmt.Errorf("CASConcurrency should be at least 1")
 	}
+	ds2 := []digest.Digest{}
+	for _, d := range ds {
+		mu.Lock()
+		if _, uploaded := uploadedDigests[d.Hash]; !uploaded {
+			ds2 = append(ds2, d)
+		}
+		mu.Unlock()
+	}
+	ds = ds2
+
 	var batches [][]digest.Digest
 	var missing []digest.Digest
 	var resultMutex sync.Mutex
