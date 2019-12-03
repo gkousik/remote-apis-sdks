@@ -63,9 +63,9 @@ func (c *Client) UploadIfMissing(ctx context.Context, data ...*chunker.Chunker) 
 	eg, eCtx := errgroup.WithContext(ctx)
 	for i, batch := range batches {
 		i, batch := i, batch   // https://golang.org/doc/faq#closures_and_goroutines
-		c.casUploaders <- true // Reserve an uploader thread.
+		// c.casUploaders <- true // Reserve an uploader thread.
 		eg.Go(func() error {
-			defer func() { <-c.casUploaders }()
+			// defer func() { <-c.casUploaders }()
 			if i%logInterval == 0 {
 				log.V(2).Infof("%d batches left to store", len(batches)-i)
 			}
@@ -426,9 +426,9 @@ func (c *Client) MissingBlobs(ctx context.Context, ds []digest.Digest) ([]digest
 	eg, eCtx := errgroup.WithContext(ctx)
 	for i, batch := range batches {
 		i, batch := i, batch   // https://golang.org/doc/faq#closures_and_goroutines
-		c.casUploaders <- true // Reserve an uploader thread.
+		// c.casUploaders <- true // Reserve an uploader thread.
 		eg.Go(func() error {
-			defer func() { <-c.casUploaders }()
+			// defer func() { <-c.casUploaders }()
 			if i%logInterval == 0 {
 				log.V(3).Infof("%d missing batches left to query", len(batches)-i)
 			}
@@ -649,9 +649,9 @@ func (c *Client) downloadFiles(ctx context.Context, execRoot string, outputs map
 	eg, eCtx := errgroup.WithContext(ctx)
 	for i, batch := range batches {
 		i, batch := i, batch     // https://golang.org/doc/faq#closures_and_goroutines
-		c.casDownloaders <- true // Reserve an downloader thread.
+		// c.casDownloaders <- true // Reserve an downloader thread.
 		eg.Go(func() error {
-			defer func() { <-c.casDownloaders }()
+			// defer func() { <-c.casDownloaders }()
 			if i%logInterval == 0 {
 				log.V(2).Infof("%d batches left to download", len(batches)-i)
 			}

@@ -99,10 +99,12 @@ func (c *Client) ExecuteAction(ctx context.Context, ac *Action) (*repb.ActionRes
 
 // CheckActionCache queries remote action cache, returning an ActionResult or nil if it doesn't exist.
 func (c *Client) CheckActionCache(ctx context.Context, acDg *repb.Digest) (*repb.ActionResult, error) {
+	fmt.Printf("Calling GetActionResult\n")
 	res, err := c.GetActionResult(ctx, &repb.GetActionResultRequest{
 		InstanceName: c.InstanceName,
 		ActionDigest: acDg,
 	})
+	fmt.Printf("GetActionResult done\n")
 	switch st, _ := status.FromError(err); st.Code() {
 	case codes.OK:
 		return res, nil

@@ -108,7 +108,7 @@ func (u UseBatchOps) Apply(c *Client) {
 type CASConcurrency int
 
 // DefaultCASConcurrency is the default maximum number of concurrent upload and download operations.
-const DefaultCASConcurrency = 50
+const DefaultCASConcurrency = 1000
 
 // Apply sets the CASConcurrency flag on a client.
 func (cy CASConcurrency) Apply(c *Client) {
