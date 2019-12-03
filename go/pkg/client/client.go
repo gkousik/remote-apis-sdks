@@ -251,12 +251,16 @@ func NewClient(ctx context.Context, instanceName string, params DialParams, opts
 	if err != nil {
 		return nil, err
 	}
+	execconn, err := Dial(ctx, params.Service, params)
+	if err != nil {
+		return nil, err
+	}
 	client := &Client{
 		InstanceName:   instanceName,
 		actionCache:    regrpc.NewActionCacheClient(casConn),
 		byteStream:     bsgrpc.NewByteStreamClient(casConn),
 		cas:            regrpc.NewContentAddressableStorageClient(casConn),
-		execution:      regrpc.NewExecutionClient(conn),
+		execution:      regrpc.NewExecutionClient(execconn),
 		capabilities:   regrpc.NewCapabilitiesClient(conn),
 		operations:     opgrpc.NewOperationsClient(conn),
 		rpcTimeout:     time.Minute,
@@ -266,7 +270,7 @@ func NewClient(ctx context.Context, instanceName string, params DialParams, opts
 		useBatchOps:    true,
 		casUploaders:   make(chan bool, DefaultCASConcurrency),
 		casDownloaders: make(chan bool, DefaultCASConcurrency),
-		Retrier:        RetryTransient(),
+		Retrier:        nil,
 	}
 	for _, o := range opts {
 		o.Apply(client)
@@ -323,6 +327,7 @@ func (r *Retrier) Apply(c *Client) {
 // to f()).
 func (r *Retrier) Do(ctx context.Context, f func() error) error {
 	if r == nil {
+		fmt.Printf("Retrier is nil, so calling funciton directly\n")
 		return f()
 	}
 	return retry.WithPolicy(ctx, r.ShouldRetry, r.Backoff, f)
