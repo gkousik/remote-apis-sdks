@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/oauth"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/naming"
 
 	regrpc "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
@@ -67,6 +68,8 @@ type Client struct {
 	casDownloaders chan bool
 	rpcTimeout     time.Duration
 	creds          credentials.PerRPCCredentials
+	// Params because I can
+	Params DialParams
 }
 
 // Close closes the underlying gRPC connection(s).
@@ -213,6 +216,12 @@ func Dial(ctx context.Context, endpoint string, params DialParams) (*grpc.Client
 		tlsCreds := credentials.NewClientTLSFromCert(nil, "")
 		opts = append(opts, grpc.WithTransportCredentials(tlsCreds))
 	}
+	resolver, err := naming.NewDNSResolver()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create dns resolver: %v", err)
+	}
+	fmt.Printf("Adding a round robin balancer\n")
+	opts = append(opts, grpc.WithBalancer(grpc.RoundRobin(resolver)))
 
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
@@ -271,11 +280,17 @@ func NewClient(ctx context.Context, instanceName string, params DialParams, opts
 		casUploaders:   make(chan bool, DefaultCASConcurrency),
 		casDownloaders: make(chan bool, DefaultCASConcurrency),
 		Retrier:        nil,
+		Params: params,
 	}
 	for _, o := range opts {
 		o.Apply(client)
 	}
 	return client, nil
+}
+
+// NewConn cuz i ken
+func (c *Client) NewConn(ctx context.Context) (*grpc.ClientConn, error) {
+	return Dial(ctx, c.Params.Service, c.Params)
 }
 
 // RPCTimeout is a Opt that sets the per-RPC deadline.
@@ -507,7 +522,12 @@ func (c *Client) Execute(ctx context.Context, req *repb.ExecuteRequest) (res reg
 func (c *Client) WaitExecution(ctx context.Context, req *repb.WaitExecutionRequest) (res regrpc.Execution_ExecuteClient, err error) {
 	opts := c.RPCOpts()
 	err = c.Retrier.Do(ctx, func() (e error) {
-		res, e = c.execution.WaitExecution(ctx, req, opts...)
+		conn, err := c.NewConn(ctx)
+		if err != nil {
+			return err
+		}
+		execClient := repb.NewExecutionClient(conn)
+		res, e = execClient.WaitExecution(ctx, req, opts...)
 		return e
 	})
 	if err != nil {

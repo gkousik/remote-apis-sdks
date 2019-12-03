@@ -360,11 +360,11 @@ func (c *Client) Run(ctx context.Context, cmd *command.Command, opt *command.Exe
 	if err != nil {
 		return command.NewLocalErrorResult(err), &command.Metadata{}
 	}
-	// fmt.Printf("Checking cached results...\n")
-	// ec.GetCachedResult()
-	// if ec.Result != nil {
-	// 	return ec.Result, ec.Metadata
-	// }
+	fmt.Printf("Checking cached results...\n")
+	ec.GetCachedResult()
+	if ec.Result != nil {
+		return ec.Result, ec.Metadata
+	}
 	fmt.Printf("Cached result is not valid - so going to execute...\n")
 	ec.ExecuteRemotely()
 	// TODO(olaola): implement the cache-miss-retry loop.

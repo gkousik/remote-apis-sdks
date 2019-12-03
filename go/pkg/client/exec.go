@@ -237,9 +237,10 @@ func (c *Client) ExecuteAndWait(ctx context.Context, req *repb.ExecuteRequest) (
 		var res regrpc.Execution_ExecuteClient
 		// In both cases, use the lower-level methods to avoid retrying twice.
 		if wait {
-			res, e = c.execution.WaitExecution(ctx, &repb.WaitExecutionRequest{Name: lastOp.Name}, opts...)
+			res, e = repb.NewExecutionClient(c.Connection).WaitExecution(ctx, &repb.WaitExecutionRequest{Name: lastOp.Name}, opts...)
 		} else {
-			res, e = c.execution.Execute(ctx, req, opts...)
+			fmt.Printf("Calling EXECUTE\n")
+			res, e = repb.NewExecutionClient(c.Connection).Execute(ctx, req, opts...)
 		}
 		if e != nil {
 			return e
