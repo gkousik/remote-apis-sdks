@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -225,6 +226,7 @@ func buildCommand(ac *Action) *repb.Command {
 // deadline-exceeded statuses, which we never give to the retrier (and hence will always propagate
 // directly to the caller).
 func (c *Client) ExecuteAndWait(ctx context.Context, req *repb.ExecuteRequest) (op *oppb.Operation, err error) {
+	fmt.Printf("Going to execute and wait\n")
 	wait := false    // Should we retry by calling WaitExecution instead of Execute?
 	opError := false // Are we propagating an Operation status as an error for the retrier's benefit?
 	lastOp := &oppb.Operation{}

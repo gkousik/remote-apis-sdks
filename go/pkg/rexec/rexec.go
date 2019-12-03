@@ -179,12 +179,15 @@ func (ec *Context) computeInputs() error {
 // update the remote cache with a local result. If the ExecutionOptions do not allow to accept
 // remotely cached results, the operation is a noop.
 func (ec *Context) GetCachedResult() {
+	fmt.Printf("Going to compute inputs in GetCachedResults()\n")
 	if err := ec.computeInputs(); err != nil {
 		ec.Result = command.NewLocalErrorResult(err)
 		return
 	}
+	fmt.Printf("Computed inputs in GetCachedResults()\n")
 	if ec.opt.AcceptCached && !ec.opt.DoNotCache {
 		ec.Metadata.EventTimes[command.EventCheckActionCache] = &command.TimeInterval{From: time.Now()}
+		fmt.Printf("Checking action cache\n")
 		resPb, err := ec.client.GrpcClient.CheckActionCache(ec.ctx, ec.Metadata.ActionDigest.ToProto())
 		ec.Metadata.EventTimes[command.EventCheckActionCache].To = time.Now()
 		if err != nil {
@@ -192,6 +195,7 @@ func (ec *Context) GetCachedResult() {
 			return
 		}
 		ec.resPb = resPb
+		fmt.Printf("Checked action cache\n")
 	}
 	if ec.resPb != nil {
 		log.V(1).Infof("%s> Found cached result, downloading outputs...", ec.cmd.Identifiers.CommandID)
@@ -257,6 +261,7 @@ func (ec *Context) ExecuteRemotely() {
 		return
 	}
 	cmdID := ec.cmd.Identifiers.CommandID
+	fmt.Printf("%s> Computed inputs\n", cmdID)
 	log.V(1).Infof("%s> Checking inputs to upload...", cmdID)
 	// TODO(olaola): compute input cache hit stats.
 	ec.Metadata.EventTimes[command.EventUploadInputs] = &command.TimeInterval{From: time.Now()}
@@ -266,8 +271,10 @@ func (ec *Context) ExecuteRemotely() {
 		ec.Result = command.NewRemoteErrorResult(err)
 		return
 	}
+	fmt.Printf("%s> Uploaded inputs\n", cmdID)
 	log.V(1).Infof("%s> Executing remotely...\n%s", cmdID, strings.Join(ec.cmd.Args, " "))
 	ec.Metadata.EventTimes[command.EventExecuteRemotely] = &command.TimeInterval{From: time.Now()}
+	fmt.Printf("%s> Calling ExecuteAndWait\n", cmdID)
 	op, err := ec.client.GrpcClient.ExecuteAndWait(ec.ctx, &repb.ExecuteRequest{
 		InstanceName:    ec.client.GrpcClient.InstanceName,
 		SkipCacheLookup: !ec.opt.AcceptCached || ec.opt.DoNotCache,
@@ -352,10 +359,12 @@ func (c *Client) Run(ctx context.Context, cmd *command.Command, opt *command.Exe
 	if err != nil {
 		return command.NewLocalErrorResult(err), &command.Metadata{}
 	}
+	fmt.Printf("Checking cached results...\n")
 	ec.GetCachedResult()
 	if ec.Result != nil {
 		return ec.Result, ec.Metadata
 	}
+	fmt.Printf("Cached result is not valid - so going to execute...\n")
 	ec.ExecuteRemotely()
 	// TODO(olaola): implement the cache-miss-retry loop.
 	return ec.Result, ec.Metadata
