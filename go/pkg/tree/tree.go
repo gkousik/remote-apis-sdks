@@ -71,7 +71,11 @@ func loadFiles(execRoot string, excl []*command.InputExclusion, path string, fs 
 	meta := cache.Get(absPath)
 	t := command.FileInputType
 	if meta.Err != nil {
-		if e, ok := meta.Err.(*filemetadata.FileError); !ok || !e.IsDirectory {
+		e, ok := meta.Err.(*filemetadata.FileError)
+		if ok && e.IsInvalidSymlink {
+			return nil
+		}
+		if !ok || !e.IsDirectory {
 			return meta.Err
 		}
 		t = command.DirectoryInputType
