@@ -51,6 +51,10 @@ message Identifiers {
 
   // An optional tool version to pass to the remote server for logging.
   string tool_version = 5;
+
+  // An optional label digest that indicates the type of action to pass
+  // to the remote server for logging.
+  string label_digest = 6;
 }
 
 message InputType {

@@ -53,7 +53,7 @@ func (c *Client) NewContext(ctx context.Context, cmd *command.Command, opt *comm
 	if err := cmd.Validate(); err != nil {
 		return nil, err
 	}
-	grpcCtx, err := rc.ContextWithMetadata(ctx, cmd.Identifiers.ToolName, cmd.Identifiers.CommandID, cmd.Identifiers.InvocationID)
+	grpcCtx, err := rc.ContextWithMetadata(ctx, cmd.Identifiers.ToolName, cmd.Identifiers.CommandID, cmd.Identifiers.InvocationID, cmd.Identifiers.LabelDigest)
 	if err != nil {
 		return nil, err
 	}

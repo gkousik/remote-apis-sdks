@@ -103,6 +103,9 @@ type Identifiers struct {
 
 	// ExecutionID is a UUID generated for a particular execution of this command.
 	ExecutionID string
+
+	// LabelDigest is the SHA of the labels identifying the type of action.
+	LabelDigest string
 }
 
 // Command encompasses the complete information required to execute a command remotely.

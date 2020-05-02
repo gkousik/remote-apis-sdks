@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
@@ -21,7 +22,7 @@ const (
 // ContextWithMetadata attaches metadata to the passed-in context, returning a new
 // context. This function should be called in every test method after a context is created. It uses
 // the already created context to generate a new one containing the metadata header.
-func ContextWithMetadata(ctx context.Context, toolName, actionID, invocationID string) (context.Context, error) {
+func ContextWithMetadata(ctx context.Context, toolName, actionID, invocationID, labelDigest string) (context.Context, error) {
 	if actionID == "" {
 		actionID = uuid.New()
 		log.Infof("Generated action_id %s for %s", actionID, toolName)
@@ -31,6 +32,9 @@ func ContextWithMetadata(ctx context.Context, toolName, actionID, invocationID s
 		log.Infof("Generated invocation_id %s for %s %s", invocationID, toolName, actionID)
 	}
 
+	if len(labelDigest) > 0 {
+		actionID = fmt.Sprintf("%s,%s", labelDigest, actionID)
+	}
 	meta := &repb.RequestMetadata{
 		ActionId:         actionID,
 		ToolInvocationId: invocationID,
