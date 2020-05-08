@@ -13,8 +13,10 @@ import (
 type Metadata struct {
 	Digest       digest.Digest
 	IsExecutable bool
+	IsDir        bool
 	MTime        time.Time
 	Err          error
+	Size         int64
 }
 
 // FileError is the error returned by the Compute function.
@@ -57,6 +59,8 @@ func Compute(filename string) *Metadata {
 	md.MTime = file.ModTime()
 	mode := file.Mode()
 	md.IsExecutable = (mode & 0100) != 0
+	md.Size = file.Size()
+	md.IsDir = file.IsDir()
 	if mode.IsDir() {
 		md.Err = &FileError{IsDirectory: true, Err: fmt.Errorf("%s is a directory", filename)}
 		return md
