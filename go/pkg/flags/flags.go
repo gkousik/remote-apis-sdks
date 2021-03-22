@@ -57,7 +57,7 @@ var (
 	// TLSClientAuthKey sets the private key for using mTLS auth to connect to the RBE service.
 	TLSClientAuthKey = flag.String("tls_client_auth_key", "", "Key to use when using mTLS to connect to the RBE service.")
 	// StartupCapabilities specifies whether to self-configure based on remote server capabilities on startup.
-	StartupCapabilities = flag.Bool("startup_capabilities", true, "Whether to self-configure based on remote server capabilities on startup.")
+	StartupCapabilities = flag.Bool("startup_capabilities", false, "Whether to self-configure based on remote server capabilities on startup.")
 	// RPCTimeouts stores the per-RPC timeout values.
 	RPCTimeouts map[string]string
 )

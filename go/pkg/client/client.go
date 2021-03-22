@@ -629,7 +629,7 @@ func NewClientFromConnection(ctx context.Context, instanceName string, conn, cas
 		ExecutableMode:                DefaultExecutableMode,
 		RegularMode:                   DefaultRegularMode,
 		useBatchOps:                   true,
-		StartupCapabilities:           true,
+		StartupCapabilities:           false,
 		casConcurrency:                DefaultCASConcurrency,
 		casUploaders:                  semaphore.NewWeighted(DefaultCASConcurrency),
 		casDownloaders:                semaphore.NewWeighted(DefaultCASConcurrency),
