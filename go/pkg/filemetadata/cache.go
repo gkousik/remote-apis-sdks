@@ -19,6 +19,10 @@ type fmCache struct {
 	cacheMisses uint64
 }
 
+type CPPDependencyScanner interface {
+	GetMinimizedFile(filename string) ([]byte, error)
+}
+
 // NewSingleFlightCache returns a singleton-backed in-memory cache, with no validation.
 func NewSingleFlightCache() Cache {
 	return &fmCache{Backend: cache.GetInstance()}
@@ -35,6 +39,19 @@ func (c *fmCache) Get(filename string) *Metadata {
 		return &Metadata{Err: err}
 	}
 	md, ch, err := c.loadMetadata(abs)
+	if err != nil {
+		return &Metadata{Err: err}
+	}
+	c.updateMetrics(ch)
+	return md
+}
+
+func (c *fmCache) GetMinimizedFile(filename string, cppdepscanner CPPDependencyScanner) *Metadata {
+	abs, err := filepath.Abs(filename)
+	if err != nil {
+		return &Metadata{Err: err}
+	}
+	md, ch, err := c.loadMinimizedFileMetadata(abs, cppdepscanner)
 	if err != nil {
 		return &Metadata{Err: err}
 	}
@@ -99,6 +116,18 @@ func (c *fmCache) loadMetadata(filename string) (*Metadata, bool, error) {
 		return nil, false, fmt.Errorf("unexpected type stored in the cache")
 	}
 	return md, cacheHit, nil
+}
+
+func (c *fmCache) loadMinimizedFileMetadata(filename string, cppdepscanner CPPDependencyScanner) (*Metadata, bool, error) {
+	cacheHit := true
+	val, err := c.Backend.LoadOrStore(namespace, filename+"-m", func() (interface{}, error) {
+		cacheHit = false
+		return ComputeMinimized(filename, cppdepscanner), nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return val.(*Metadata), cacheHit, nil
 }
 
 func (c *fmCache) updateMetrics(cacheHit bool) {

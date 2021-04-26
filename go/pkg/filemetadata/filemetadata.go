@@ -80,9 +80,56 @@ func Compute(filename string) *Metadata {
 	return md
 }
 
+// Compute computes a Metadata from a given file path.
+// If an error is returned, it will be of type *FileError.
+func ComputeMinimized(filename string, cppdepscanner CPPDependencyScanner) *Metadata {
+	md := &Metadata{Digest: digest.Empty}
+	file, err := os.Stat(filename)
+	if isSym, _ := isSymlink(filename); isSym {
+		md.Symlink = &SymlinkMetadata{}
+		dest, rlErr := os.Readlink(filename)
+		if rlErr != nil {
+			md.Err = &FileError{Err: rlErr}
+			return md
+		}
+		// If Readlink was OK, we set Target, even if this could be a dangling symlink.
+		md.Symlink.Target = dest
+		if err != nil {
+			md.Err = &FileError{Err: err}
+			md.Symlink.IsDangling = true
+			return md
+		}
+	}
+
+	if err != nil {
+		fe := &FileError{Err: err}
+		if os.IsNotExist(err) {
+			fe.IsNotFound = true
+		}
+		md.Err = fe
+		return md
+	}
+	mode := file.Mode()
+	md.IsExecutable = (mode & 0100) != 0
+	if mode.IsDir() {
+		md.IsDirectory = true
+		return md
+	}
+
+	minimizedFileContent, err := cppdepscanner.GetMinimizedFile(filename)
+	if err != nil {
+		md.Err = err
+	} else {
+		md.Digest = digest.NewFromBlob(minimizedFileContent)
+		md.Err = nil
+	}
+	return md
+}
+
 // Cache is a cache for file contents->Metadata.
 type Cache interface {
 	Get(path string) *Metadata
+	GetMinimizedFile(path string, cppdepscanner CPPDependencyScanner) *Metadata
 	Delete(filename string) error
 	Update(path string, cacheEntry *Metadata) error
 	Reset()
@@ -95,6 +142,12 @@ type noopCache struct{}
 // Get computes the metadata from the file contents.
 // If an error is returned, it will be in Metadata.Err of type *FileError.
 func (c *noopCache) Get(path string) *Metadata {
+	return Compute(path)
+}
+
+// Get computes the metadata from the file contents.
+// If an error is returned, it will be in Metadata.Err of type *FileError.
+func (c *noopCache) GetMinimizedFile(path string, cppdepscanner CPPDependencyScanner) *Metadata {
 	return Compute(path)
 }
 

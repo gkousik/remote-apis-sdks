@@ -114,6 +114,16 @@ func (c *callCountingMetadataCache) Get(path string) *filemetadata.Metadata {
 	return c.cache.Get(path)
 }
 
+func (c *callCountingMetadataCache) GetMinimizedFile(path string, _ filemetadata.CPPDependencyScanner) *filemetadata.Metadata {
+	c.t.Helper()
+	p, err := filepath.Rel(c.execRoot, path)
+	if err != nil {
+		c.t.Errorf("expected %v to be under %v", path, c.execRoot)
+	}
+	c.calls[p]++
+	return c.cache.Get(path)
+}
+
 func (c *callCountingMetadataCache) Delete(path string) error {
 	c.t.Helper()
 	p, err := filepath.Rel(c.execRoot, path)
