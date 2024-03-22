@@ -10,6 +10,13 @@ import (
 
 	"github.com/bazelbuild/remote-apis-sdks/go/pkg/digest"
 	"github.com/pkg/xattr"
+
+	log "github.com/golang/glog"
+)
+
+var (
+	digestParallelism = 20
+	parallelDigestChannel = make(chan struct{}, digestParallelism)
 )
 
 // SymlinkMetadata contains details if the given path is a symlink.
@@ -125,7 +132,15 @@ func Compute(filename string) *Metadata {
 			return md
 		}
 	}
+
+	start := time.Now()
+	parallelDigestChannel <- struct{}{}
+	waitEnd := time.Now()
 	md.Digest, err = digest.NewFromFile(filename)
+	<- parallelDigestChannel
+	end := time.Now()
+	log.Infof("Computed digest for %v (using channel parallelism=%v), waitTime=%v, time=%v", filename, digestParallelism, waitEnd.Sub(start), end.Sub(start))
+
 	if err != nil {
 		md.Err = &FileError{Err: err}
 	}
